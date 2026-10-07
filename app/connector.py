@@ -1,6 +1,9 @@
 import re
 import sqlite3
 import requests
+import argparse
+import json
+import sys
 
 GITHUB_API = "https://api.github.com"
 DEFAULT_DB_PATH = "issues.db"
@@ -97,3 +100,48 @@ def import_issues(repo, db_path=DEFAULT_DB_PATH):
         return {"ok": False, "error": str(e)}
 
     return {"ok": True, "repository": repository, "imported": len(rows)}
+
+def read_issues(repo, db_path=DEFAULT_DB_PATH):
+    """Return saved issues for 'owner/name' from SQLite. Never calls GitHub."""
+    try:
+        owner, name = parse_repo(repo)
+        repository = f"{owner}/{name}".lower()
+
+        conn = get_connection(db_path)
+        try:
+            cursor = conn.execute(
+                "SELECT number, title, url FROM issues WHERE repository = ? ORDER BY number DESC",
+                (repository,),
+            )
+            issues = [
+                {"number": number, "title": title, "url": url}
+                for number, title, url in cursor.fetchall()
+            ]
+        except sqlite3.Error as e:
+            raise ConnectorError(f"Could not read issues: {e}") from e
+        finally:
+            conn.close()
+    except ConnectorError as e:
+        return {"ok": False, "error": str(e)}
+
+    return {"ok": True, "repository": repository, "count": len(issues), "issues": issues}
+
+
+def main():
+    parser = argparse.ArgumentParser(description="GitHub issue snapshot connector")
+    parser.add_argument("command", choices=["import", "read"], help="what to do")
+    parser.add_argument("repo", help="repository as owner/name")
+    parser.add_argument("--db", default=DEFAULT_DB_PATH, help="SQLite database path")
+    args = parser.parse_args()
+
+    if args.command == "import":
+        result = import_issues(args.repo, args.db)
+    else:
+        result = read_issues(args.repo, args.db)
+
+    print(json.dumps(result, indent=2))
+    sys.exit(0 if result["ok"] else 1)
+
+
+if __name__ == "__main__":
+    main()
