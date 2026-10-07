@@ -4,7 +4,7 @@ A small connector that copies open issues from a public GitHub repository into a
 
 ## Interface
 
-The connector exposes two reusable functions in `app/connector.py`. Both return JSON-compatible dictionaries and never raise to the caller.
+The connector exposes two reusable functions in app/connector.py. Both return JSON-compatible dictionaries for successful operations and expected failures.
 
 ```python
 import_issues(repo: str, db_path: str = "issues.db") -> dict
@@ -21,7 +21,7 @@ read_issues(repo: str, db_path: str = "issues.db") -> dict
 {
   "ok": true,
   "repository": "psf/requests",
-  "count": 15,
+  "count": 1,
   "issues": [{ "number": 7632, "title": "...", "url": "https://github.com/psf/requests/issues/7632" }]
 }
 ```
@@ -101,14 +101,14 @@ No token or environment variable is required for public repositories.
 
 ## Error Handling
 
-Internal helpers raise `ConnectorError` with a specific message. The two public functions catch it at the boundary and return `{"ok": false, "error": ...}`, so callers always get a consistent, JSON-compatible result.
+Internal helpers raise ConnectorError for expected input, network, API, and database failures. The public functions catch these errors and return {"ok": false, "error": ...}. Unexpected exceptions may still propagate.
 
 Imports run inside a single transaction, so a failure never leaves a half-saved import. A failed API call also happens before any database write, so previously saved data is untouched.
 
 ## Key Design Tradeoffs
 
 - **Errors as return values, not exceptions.** Callers get a predictable `ok` flag and can serialize every result as JSON. The cost is that callers must check `ok` instead of using `try/except`.
-- **Filtering pull requests after fetching.** The issues endpoint mixes pull requests in, and the API offers no way to exclude them. A page of 30 items therefore yields fewer than 30 issues (15 for `psf/requests` in testing). Fetching more pages would fix this, but pagination is out of scope.
+- **Filtering pull requests after fetching.** The endpoint returns issues and pull requests together. Filtering a page of up to 30 items can leave fewer than 30 issues. Additional pages are outside this challenge’s scope.
 - **Open issues only, no deletion.** An issue that is closed on GitHub after being imported stays in the local database as a stale row. Detecting this would require comparing against the full open set or tracking state.
 - **Upsert instead of delete-and-reinsert.** Updating in place by primary key is simpler, atomic, and never leaves a window where data is missing.
 - **Lowercasing the repository name.** This prevents duplicates from different capitalizations, at the cost of not preserving the exact capitalization the user typed.
