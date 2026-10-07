@@ -15,7 +15,7 @@ For design details (components, data flow, schema, tradeoffs) see [Architecture.
 
 ## Prerequisites
 
-- Python [3.x] (check with `python3 --version`)
+- Python 3.9 or newer (check with `python3 --version`)
 - `pip`
 - Internet access for real imports (no GitHub token needed for public repos)
 
@@ -75,11 +75,11 @@ issues = read_issues("owner/name", db_path="issues.db")
 Input:
 
 ```bash
-python3 app/connector.py read psf/requests
+python3 app/connector.py import psf/requests
 ```
 
 Output:
-
+Illustrative output; actual issues and counts will vary.
 ```json
 { "ok": true, "repository": "psf/requests", "imported": 1 }
 ```
@@ -89,11 +89,11 @@ Output:
 Input:
 
 ```bash
-python3 app/connector.py read [owner/name]
+python3 app/connector.py read psf/requests
 ```
 
 Output:
-
+Illustrative output; actual issues and counts will vary.
 ```json
 {
   "ok": true,
@@ -130,12 +130,12 @@ Output:
 
 | Setting | How to set it | Default |
 | --- | --- | --- |
-| Database path | `--db` flag / `db_path` argument | [default path] |
+| Database path | `--db` flag / `db_path` argument | `issues.db` |
 
 ## Running the Tests
 
 ```bash
-pytest app/tests -v
+python3 -m pytest app/tests -v
 ```
 
 The tests use mocked GitHub responses and cover:
