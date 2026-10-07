@@ -36,8 +36,8 @@ pip install -r requirements.txt
 ## Local Setup
 
 ```bash
-git clone [your-repo-url]
-cd [repo-folder]
+git clone https://github.com/neilsyal123-web/rocketride.git
+cd rocketride
 
 python3 -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
@@ -75,13 +75,13 @@ issues = read_issues("owner/name", db_path="issues.db")
 Input:
 
 ```bash
-python3 app/connector.py import [owner/name]
+python3 app/connector.py read psf/requests
 ```
 
 Output:
 
 ```json
-{ "ok": true, "repository": "owner/name", "imported": 0 }
+{ "ok": true, "repository": "psf/requests", "imported": 1 }
 ```
 
 **Read**
@@ -97,9 +97,14 @@ Output:
 ```json
 {
   "ok": true,
-  "repository": "owner/name",
+  "repository": "psf/requests",
+  "count": 1,
   "issues": [
-    { "number": 1, "title": "...", "url": "https://github.com/owner/name/issues/1" }
+    {
+      "number": 123,
+      "title": "Example issue title",
+      "url": "https://github.com/psf/requests/issues/123"
+    }
   ]
 }
 ```
@@ -115,7 +120,10 @@ python3 app/connector.py import not-a-valid-repo
 Output:
 
 ```json
-{ "ok": false, "error": "..." }
+{
+  "ok": false,
+  "error": "Invalid repository 'not-a-valid-repo'. Expected format: owner/name"
+}
 ```
 
 ## Configuration
